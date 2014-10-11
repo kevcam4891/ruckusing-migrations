@@ -146,6 +146,21 @@ class Ruckusing_Migration_Base
         return $this->_adapter->rename_column($tbl_name, $column_name, $new_column_name);
     }
 
+		/**
+		 * Rename multiple columns
+		 * 
+		 * @param type $tbl_name
+		 * @param type $renames
+		 * @return boolean
+		 */
+		public function rename_columns($tbl_name, $renames){
+			foreach ($renames as $o => $n){
+				$this->rename_column($tbl_name, $o, $n);
+			}
+
+			return true;
+		}
+
     /**
      * Add a column
      *
@@ -161,18 +176,23 @@ class Ruckusing_Migration_Base
         return $this->_adapter->add_column($table_name, $column_name, $type, $options);
     }
 
-    /**
-     * Remove a column
-     *
-     * @param string $table_name  the name of the table
-     * @param string $column_name the column name
-     *
-     * @return boolean
-     */
-    public function remove_column($table_name, $column_name)
-    {
-        return $this->_adapter->remove_column($table_name, $column_name);
-    }
+		/**
+		 * Remove one or more columns from a table.
+		 *
+		 * @param string $table_name  the name of the table
+		 * @param mixed $column_name the column name
+		 *
+		 * @return boolean
+		 */
+		public function remove_column($table_name, $column_name) {
+			if (is_array($column_name)) {
+				foreach ($column_name as $col) {
+					$this->remove_column($table_name, $col);
+				}
+			}else{
+				return $this->_adapter->remove_column($table_name, $column_name);
+			}
+		}
 
     /**
      * Change a column
@@ -290,6 +310,40 @@ class Ruckusing_Migration_Base
     {
         return $this->_adapter->quote_string($str);
     }
+
+		/**
+		 * Add multiple columns
+		 * 
+		 * Use this method when you want to add multiple columns. Specify `$after` to 
+		 * begin adding columns after a specified column. All columns will file in one 
+		 * after the other.
+		 * 
+		 * @param string $table_name
+		 * @param array $cols
+		 * @param array $options
+		 * @return boolean
+		 */
+		public function add_columns($table_name, $cols, $options = array()){
+
+			// Add Columns
+			foreach ($cols as $col){
+				$colName = $col[0];
+				$colType = (!empty($col[1])) ? $col[1] : null;
+				$colOpts = (!empty($col[2])) ? $col[2] : null;
+
+				if (empty($colOpts)) $colOpts = array();
+				$colOpts = array_merge($colOpts, $options);
+
+				if (!empty($options['type']))
+					$colType = $options['type'];
+
+				$this->add_column($table_name, $colName, $colType, $colOpts);
+				$options['after'] = $colName;
+			}
+
+			return true;
+		}
+
 
 }
 
